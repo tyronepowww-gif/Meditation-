@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>🌙 AURA TRAINER — ELDER EDITION</title>
+<style>
+/* ==========================================================
+   AURA TRAINER — ELDER EDITION
+   Sections: 1 Tokens | 2 Base | 3 Background FX | 4 Components
+             5 Screens | 6 Avatar | 7 Settings | 8 Motion
+   ========================================================== */
+
+/* ---------- 1. DESIGN TOKENS ---------- */
+:root {
+  --bg1: #070b24;
+  --bg2: #120a3a;
+  --bg3: #0a2a4a;
+  --ink: #ffffff;
+  --ink-soft: #d9e4ff;
+  --gold: #ffe08a;
+  --aura: #8be9ff;
+  --card: rgba(18, 24, 70, 0.82);
+  --card-edge: rgba(190, 210, 255, 0.55);
+  --btn: #ffe08a;
+  --btn-ink: #14123a;
+  --font-base: 22px;
+  --radius: 26px;
+  --target: 72px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Elder mode gives larger text and controls */
+body.elder {
+  --font-base: 26px;
+  --target: 88px;
+}
+
+/* ---------- 2. BASE ---------- */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  font-size: var(--font-base);
+  line-height: 1.45;
+  color: var(--ink);
+  background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3), var(--bg1));
+  background-size: 400% 400%;
+  animation: skyShift 40s ease-in-out infinite;
+  min-height: 100vh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  overflow-x: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+h1, h2, h3 { margin: 0 0 .4em; line-height: 1.2; }
+h1 { font-size: 1.7em; }
+h2 { font-size: 1.4em; }
+h3 { font-size: 1.15em; }
+p { margin: 0 0 .7em; }
+button, input, select, textarea { font-family: inherit; font-size: 1em; }
+:focus-visible { outline: 5px solid var(--gold); outline-offset: 4px; }
+
+/* ---------- 3. BACKGROUND FX ---------- */
+#fx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.orb {
+  position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,233,255,.35), rgba(139,233,255,0) 70%);
+  filter: blur(6px);
+  animation: orbFloat 18s ease-in-out infinite;
+}
+.mote {
+  position: absolute; bottom: -20px; width: 8px; height: 8px; border-radius: 50%;
+  background: #fff8c8; box-shadow: 0 0 14px 4px rgba(255,240,160,.7);
+  opacity: 0; animation: rise linear infinite;
+}
+.star {
+  position: absolute; width: 3px; height: 3px; background: #fff; border-radius: 50%;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+/* ---------- 4. COMPONENTS ---------- */
+#app { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 18px 16px 40px; }
+.screen { display: none; animation: fadeIn .6s ease; }
+.screen.active { display: block; }
+
+.card {
+  background: var(--card);
+  border: 3px solid var(--card-edge);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 30px rgba(120,160,255,.25);
+  backdrop-filter: blur(4px);
+}
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: .5em;
+  width: 100%; min-height: var(--target);
+  padding: 14px 22px;
+  background: var(--btn); color: var(--btn-ink);
+  border: 4px solid #fff3c4; border-radius: var(--radius);
+  font-weight: bold; font-size: 1.1em; cursor: pointer; text-align: center;
+  box-shadow: 0 0 22px rgba(255,224,138,.45);
+  transition: transform .15s ease, box-shadow .15s ease;
+  touch-action: manipulation;
+}
+.btn:active { transform: scale(.97); }
+.btn.secondary { background: #1d2a7a; color: #fff; border-color: var(--card-edge); box-shadow: none; }
+.btn.small { width: auto; flex: 1; min-width: 150px; }
+.row { display: flex; flex-wrap: wrap; gap: 14px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.stat {
+  background: rgba(255,255,255,.08); border: 2px solid var(--card-edge);
+  border-radius: 20px; padding: 14px; text-align: center;
+}
+.stat .label { color: var(--ink-soft); font-size: .8em; }
+.stat .value { font-size: 1.5em; font-weight: bold; color: var(--gold); }
+
+.xpbar { height: 28px; background: rgba(255,255,255,.15); border: 2px solid var(--card-edge); border-radius: 20px; overflow: hidden; }
+.xpbar > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--aura), var(--gold)); transition: width .8s ease; }
+
+.title-bar { text-align: center; margin-bottom: 14px; }
+.title-bar h1 { text-shadow: 0 0 24px rgba(139,233,255,.9); }
+.sub { color: var(--ink-soft); }
+
+/* ---------- 5. SCREENS ---------- */
+/* Exercise picker */
+.ex-list { display: grid; gap: 12px; margin-top: 12px; }
+.ex-item {
+  display: block; width: 100%; text-align: left; min-height: var(--target);
+  background: rgba(255,255,255,.08); color: #fff;
+  border: 3px solid var(--card-edge); border-radius: 22px; padding: 14px 18px; cursor: pointer;
+  touch-action: manipulation;
+}
+.ex-item.selected { border-color: var(--gold); background: rgba(255,224,138,.18); box-shadow: 0 0 22px rgba(255,224,138,.4); }
+.ex-item .nm { font-weight: bold; font-size: 1.05em; }
+.ex-item .ds { color: var(--ink-soft); font-size: .8em; }
+.ex-item .mt { color: var(--gold); font-size: .8em; }
+
+/* Training */
+.train-name { text-align: center; color: var(--gold); }
+#timer {
+  text-align: center; font-size: clamp(90px, 28vw, 190px); font-weight: bold; line-height: 1;
+  color: #fff; text-shadow: 0 0 30px rgba(139,233,255,.95), 0 0 70px rgba(139,233,255,.6);
+  font-variant-numeric: tabular-nums; margin: 6px 0 10px;
+}
+#instruction {
+  text-align: center; font-size: 1.7em; font-weight: bold; min-height: 2.6em;
+  display: flex; align-items: center; justify-content: center; color: var(--gold);
+  text-shadow: 0 0 16px rgba(255,224,138,.6);
+}
+#flowWrap { position: relative; height: 150px; margin: 8px 0 14px; }
+#flowWrap svg { width: 100%; height: 100%; display: block; }
+#holdBtn {
+  display: flex; align-items: center; justify-content: center;
+  width: min(86vw, 380px); height: min(86vw, 380px); max-height: 46vh; min-height: 220px;
+  margin: 8px auto 16px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #5b6bff, #23267a 70%);
+  border: 8px solid var(--card-edge); color: #fff;
+  font-size: 2.2em; font-weight: bold; letter-spacing: .08em; cursor: pointer;
+  box-shadow: 0 0 40px rgba(110,140,255,.6), inset 0 0 40px rgba(139,233,255,.35);
+  touch-action: none; transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
+}
+#holdBtn.cue {
+  border-color: var(--gold);
+  box-shadow: 0 0 70px rgba(255,224,138,.95), inset 0 0 50px rgba(255,224,138,.5);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+#holdBtn.down {
+  transform: scale(.95);
+  background: radial-gradient(circle at 50% 40%, #ffe9a6, #ffb347 75%); color: #14123a;
+  box-shadow: 0 0 90px rgba(255,224,138,1);
+}
+.progress-label { display: flex; justify-content: space-between; color: var(--ink-soft); margin-bottom: 6px; }
+
+/* Results */
+.big-center { text-align: center; }
+.sparkle { font-size: 3em; }
+.msg { font-size: 1.25em; color: var(--gold); text-align: center; font-style: italic; }
+
+/* ---------- 6. AVATAR ---------- */
+.avatar-box { display: flex; justify-content: center; margin: 8px 0; }
+.avatar-box svg { width: 220px; height: 260px; max-width: 60vw; }
+.mini-avatar svg { width: 120px; height: 140px; }
+.home-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.field { margin-bottom: 16px; }
+.field label { display: block; margin-bottom: 6px; font-weight: bold; }
+.field input[type=text] {
+  width: 100%; min-height: var(--target); padding: 10px 16px; border-radius: 20px;
+  border: 3px solid var(--card-edge); background: #0d1450; color: #fff;
+  -webkit-user-select: text; user-select: text;
+}
+.swatches { display: flex; flex-wrap: wrap; gap: 12px; }
+.swatch {
+  width: 64px; height: 64px; border-radius: 50%; border: 4px solid #fff; cursor: pointer; padding: 0;
+  touch-action: manipulation;
+}
+.swatch.sel { border-color: var(--gold); box-shadow: 0 0 0 5px var(--gold), 0 0 22px rgba(255,224,138,.8); }
+
+/* ---------- 7. SETTINGS ---------- */
+.toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: var(--target); padding: 8px 6px; border-bottom: 2px solid rgba(255,255,255,.15);
+}
+.toggle:last-of-type { border-bottom: none; }
+.switch {
+  min-width: 130px; min-height: 64px; border-radius: 40px; border: 4px solid var(--card-edge);
+  background: #2a2f6a; color: #fff; font-weight: bold; cursor: pointer; padding: 6px 16px;
+  touch-action: manipulation;
+}
+.switch.on { background: var(--gold); color: var(--btn-ink); border-color: #fff3c4; }
+textarea#importBox {
+  width: 100%; min-height: 120px; border-radius: 18px; background: #0d1450; color: #fff;
+  border: 3px solid var(--card-edge); padding: 12px; -webkit-user-select: text; user-select: text;
+}
+#toast {
+  position: fixed; left: 50%; bottom: calc(24px + var(--safe-bottom)); transform: translateX(-50%) translateY(30px);
+  background: var(--gold); color: var(--btn-ink); padding: 16px 26px; border-radius: 30px;
+  font-weight: bold; opacity: 0; transition: all .4s ease; z-index: 50; max-width: 90vw; text-align: center;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 8. MOTION ---------- */
+@keyframes skyShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-60px) scale(1.2); } }
+@keyframes rise { 0% { transform: translateY(0) translateX(0); opacity: 0; } 15% { opacity: .9; } 85% { opacity: .7; } 100% { transform: translateY(-110vh) translateX(30px); opacity: 0; } }
+@keyframes twinkle { 0%,100% { opacity: .2; } 50% { opacity: 1; } }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@keyframes waveMove { from { transform: translateX(0); } to { transform: translateX(-400px); } }
+.wave-a { animation: waveMove 9s linear infinite; }
+.wave-b { animation: waveMove 14s linear infinite reverse; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+@media (min-width: 700px) {
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  .ex-list { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body class="elder">
+
+<!-- Ambient background layer (filled by JS) -->
+<div id="fx" aria-hidden="true"></div>
+
+<div id="app">
+
+  <!-- ===================== SCREEN 1: HOME ===================== -->
+  <section id="screen-home" class="screen active" aria-label="Home">
+    <div class="title-bar">
+      <h1>🌙 AURA TRAINER</h1>
+      <div class="sub">Elder Edition</div>
+    </div>
+
+    <div class="card">
+      <div class="home-top">
+        <div class="mini-avatar" id="homeAvatar"></div>
+        <div style="flex:1; min-width:220px; text-align:center;">
+          <h2 id="homeName">Mage</h2>
+          <div class="sub">Level <b id="homeLevel" style="color:var(--gold)">1</b> — <b id="homeRank" style="color:var(--gold)">Apprentice</b></div>
+          <div class="xpbar" style="margin-top:12px;" aria-label="Experience progress"><div id="homeXpBar"></div></div>
+          <div class="sub" style="margin-top:6px;" id="homeXpText">0 / 100 XP</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="margin-bottom:20px;">
+      <div class="stat"><div class="label">Level</div><div class="value" id="statLevel">1</div></div>
+      <div class="stat"><div class="label">Rank</div><div class="value" id="statRank" style="font-size:1.05em;">Apprentice</div></div>
+      <div class="stat"><div class="label">Training Minutes</div><div class="value" id="statMinutes">0</div></div>
+      <div class="stat"><div class="label">Current Streak</div><div class="value" id="statStreak">0 days</div></div>
+    </div>
+
+    <div class="card">
+      <h3>✨ Today's Recommendation</h3>
+      <p id="recoName" style="font-size:1.2em; color:var(--gold); font-weight:bold;"></p>
+      <p id="recoDesc" class="sub"></p>
+      <div class="sub" id="recoMeta"></div>
+    </div>
+
+    <button class="btn" id="beginBtn">🌟 Begin Training</button>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>Choose Your Exercise</h3>
+      <div class="ex-list" id="exList"></div>
+    </div>
+
+    <div class="row">
+      <button class="btn secondary small" id="openAvatar">🧙 My Mage</button>
+      <button class="btn secondary small" id="openSettings">⚙️ Settings</button>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN 2: TRAINING ===================== -->
+  <section id="screen-train" class="screen" aria-label="Training">
+    <div class="card">
+      <h2 class="train-name" id="trainName">Exercise</h2>
+      <div id="timer" role="timer" aria-live="off">0:00</div>
+      <div id="instruction" aria-live="polite">Get ready…</div>
+      <div id="flowWrap" aria-hidden="true">
+        <svg viewBox="0 0 400 150" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="waveGrad" x1="0" x2="1">
+              <stop offset="0" stop-color="#8be9ff" stop-opacity=".1"/>
+              <stop offset=".5" stop-color="#8be9ff" stop-opacity=".9"/>
+              <stop offset="1" stop-color="#ffe08a" stop-opacity=".2"/>
+            </linearGradient>
+          </defs>
+          <g class="wave-a"><path id="waveA" fill="none" stroke="url(#waveGrad)" stroke-width="6" stroke-linecap="round"/></g>
+          <g class="wave-b"><path id="waveB" fill="none" stroke="url(#waveGrad)" stroke-width="4" stroke-linecap="round" opacity=".6"/></g>
+          <circle id="flowOrb" cx="200" cy="75" r="22" fill="#ffe08a" opacity=".95"/>
+          <circle id="flowHalo" cx="200" cy="75" r="40" fill="none" stroke="#ffe08a" stroke-width="3" opacity=".5"/>
+        </svg>
+      </div>
+      <button id="holdBtn" aria-label="Press and hold when instructed">HOLD</button>
+      <div class="progress-label"><span>Progress</span><span id="progText">0%</span></div>
+      <div class="xpbar" aria-label="Session progress"><div id="progBar"></div></div>
+    </div>
+    <div class="row">
+      <button class="btn secondary small" id="endEarly">🌿 Finish Gently</button>
+      <button class="btn secondary small" id="voiceTrain">🔊 Voice: On</button>
+    </div>
+  </section>
+
+  <!-- ===================== SCREEN 3: RESULTS ===================== -->
+  <section id="screen-results" class="screen" aria-label="Results">
+    <div class="card big-center">
+      <div class="sparkle">🌟</div>
+      <h1>Session Complete</h1>
+      <p class="msg" id="resMsg"></p>
+    </div>
+    <div class="stat-grid" style="margin-bottom:20px;">
+      <div class="stat"><div class="label">Exercise</div><div class="value" id="resExercise" style="font-size:1.05em;">—</div></div>
+      <div class="stat"><div class="label">Accuracy</div><div class="value" id="resAccuracy">0%</div></div>
+      <div class="stat"><div class="label">Time Trained</div><div class="value" id="resMinutes">0</div></div>
+      <div class="stat"><div class="label">XP Earned</div><div class="value" id="resXp">0</div></div>
+    </div>
+    <div class="card">
+      <h3>Mastery</h3>
+      <div class="xpbar"><div id="resMastery"></div></div>
+      <p class="sub" id="resMasteryText" style="margin-top:8px;"></p>
+      <p id="resLevelUp" class="msg" style="display:none;"></p>
+    </div>
+    <button class="btn" id="homeBtn">🏠 Return Home</button>
+  </section>
+
+  <!-- ===================== SCREEN 4: AVATAR ===================== -->
+  <section id="screen-avatar" class="screen" aria-label="Customize Mage">
+    <div class="title-bar"><h1>🧙 My Mage</h1></div>
+    <div class="card">
+      <div class="avatar-box" id="avatarPreview"></div>
+      <div class="field"><label for="nameInput">Name</label><input type="text" id="nameInput" maxlength="16" autocomplete="off"></div>
+      <div class="field"><label>Skin Tone</label><div class="swatches" id="skinSw"></div></div>
+      <div class="field"><label>Hair Color</label><div class="swatches" id="hairSw"></div></div>
+      <div class="field"><label>Robe Color</label><div class="swatches" id="robeSw"></div></div>
+      <div class="field"><label>Aura Color</label><div class="swatches" id="auraSw"></div></div>
+    </div>
+    <button class="btn" id="avatarDone">✔ Done</button>
+  </section>
+
+  <!-- ===================== SCREEN 5: SETTINGS ===================== -->
+  <section id="screen-settings" class="screen" aria-label="Settings">
+    <div class="title-bar"><h1>⚙️ Settings</h1></div>
+    <div class="card">
+      <div class="toggle"><span>Elder Mode<br><span class="sub" style="font-size:.75em;">Larger text, slower pace, gentler scoring</span></span><button class="switch on" id="tgElder">On</button></div>
+      <div class="toggle"><span>Voice Guidance</span><button class="switch on" id="tgVoice">On</button></div>
+    </div>
+    <div class="card">
+      <h3>Save Data</h3>
+      <div class="row" style="margin-bottom:14px;">
+        <button class="btn secondary small" id="exportBtn">📤 Export Save</button>
+        <button class="btn secondary small" id="importBtn">📥 Import Save</button>
+      </div>
+      <textarea id="importBox" placeholder="Paste your save code here, then press Import Save." aria-label="Save code"></textarea>
+      <div style="height:14px;"></div>
+      <button class="btn secondary" id="resetBtn">🗑 Reset Progress</button>
+      <p class="sub" id="resetHint" style="display:none; margin-top:10px;">Press Reset Progress again to confirm. This cannot be undone.</p>
+    </div>
+    <button class="btn" id="settingsDone">✔ Done</button>
+  </section>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ==========================================================
+   AURA TRAINER — ELDER EDITION  |  JavaScript
+   Sections: 1 Config | 2 State | 3 Utils | 4 Voice | 5 Avatar
+             6 Background FX | 7 Navigation | 8 Home UI
+             9 Training Engine | 10 Results | 11 Settings
+             12 Save/Import | 13 Init
+   ========================================================== */
+(function () {
+  "use strict";
+
+  /* ---------- 1. CONFIG (easy to extend) ---------- */
+  var SAVE_KEY = "auraTrainerElderSave_v1";
+  var XP_PER_LEVEL = 100;
+
+  // Ranks: unlocked at the listed minimum level
+  var RANKS = [
+    { level: 1, title: "Apprentice" },
+    { level: 2, title: "Initiate" },
+    { level: 3, title: "Adept Mage" },
+    { level: 5, title: "Battle Mage" },
+    { level: 8, title: "First Class Mage" }
+  ];
+
+  // Exercises: seconds = session length, cycle = [{ type, secs, text, say }]
+  // type "hold" = user presses and holds; "rest" = breathe/release
+  var EXERCISES = [
+    { id: "suppression", name: "Mana Suppression", desc: "Quiet your aura and keep it perfectly still.", seconds: 60, xp: 20, hold: 3, rest: 3 },
+    { id: "zoltraak", name: "Zoltraak Focus", desc: "Gather your focus into one bright point.", seconds: 60, xp: 25, hold: 3, rest: 4 },
+    { id: "conservation", name: "Aura Conservation", desc: "Keep your mana steady and unhurried.", seconds: 75, xp: 30, hold: 4, rest: 4 },
+    { id: "regulation", name: "Aura Regulation", desc: "Let your mana flow in a smooth, even rhythm.", seconds: 75, xp: 35, hold: 4, rest: 3 },
+    { id: "defensive", name: "Defensive Magic", desc: "Raise a gentle shield and hold it with calm.", seconds: 90, xp: 40, hold: 5, rest: 4 },
+    { id: "perfect", name: "Perfect Control", desc: "Hold your power with steady, graceful control.", seconds: 90, xp: 45, hold: 5, rest: 3 },
+    { id: "barrier", name: "Advanced Barrier", desc: "Weave a lasting barrier of light.", seconds: 105, xp: 50, hold: 6, rest: 4 },
+    { id: "sanctuary", name: "Sanctuary of Sol", desc: "Rest within a sanctuary of warm golden light.", seconds: 120, xp: 60, hold: 6, rest: 5 }
+  ];
+
+  var SKIN = ["#fde3c8", "#f2c9a0", "#d9a273", "#b57a4d", "#8a5634", "#5e3920"];
+  var HAIR = ["#f4f1ea", "#c9d3e8", "#f0d77a", "#b5532c", "#4a2f1b", "#1b1b2a", "#7b4fd0"];
+  var ROBE = ["#2f4fbf", "#6a3fb5", "#1e8a6a", "#b53f5a", "#c97a1e", "#2b2f4d"];
+  var AURA = ["#8be9ff", "#ffe08a", "#c9a0ff", "#8dffb4", "#ff9ec4", "#ffffff"];
+
+  var MESSAGES = [
+    "Your control grows steadier.",
+    "Excellent focus.",
+    "The flow of mana is becoming smoother.",
+    "Another step toward mastery.",
+    "Your aura glows calmly and brightly.",
+    "A peaceful session. Well done.",
+    "Patience is the mage's greatest strength."
+  ];
+
+  /* ---------- 2. STATE ---------- */
+  function defaultState() {
+    return {
+      xp: 0,               // total XP earned
+      streak: 0,
+      lastDay: "",         // YYYY-MM-DD of last session
+      seconds: 0,          // total seconds trained
+      mastery: {},         // exerciseId -> 0..100
+      avatar: { name: "Mage", skin: 1, hair: 0, robe: 0, aura: 0 },
+      elder: true,
+      voice: true,
+      selected: "suppression"
+    };
+  }
+  var state = defaultState();
+
+  /* ---------- 3. UTILS ---------- */
+  function $(id) { return document.getElementById(id); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function todayStr(d) { d = d || new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fmtTime(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + pad(s % 60); }
+  function levelFromXp(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
+  function rankFor(level) {
+    var r = RANKS[0];
+    for (var i = 0; i < RANKS.length; i++) if (level >= RANKS[i].level) r = RANKS[i];
+    return r.title;
+  }
+  function exById(id) { for (var i = 0; i < EXERCISES.length; i++) if (EXERCISES[i].id === id) return EXERCISES[i]; return EXERCISES[0]; }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function mins(sec) { return Math.round(sec / 60 * 10) / 10; }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 3200);
+  }
+
+  /* ---------- 4. VOICE (SpeechSynthesis) ---------- */
+  var voiceOk = ("speechSynthesis" in window) && ("SpeechSynthesisUtterance" in window);
+  function speak(text) {
+    if (!voiceOk || !state.voice) return;
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = state.elder ? 0.8 : 0.95;
+      u.pitch = 1; u.volume = 1;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* voice is optional */ }
+  }
+  function syncVoiceButtons() {
+    var on = state.voice;
+    $("tgVoice").textContent = on ? "On" : "Off";
+    $("tgVoice").classList.toggle("on", on);
+    $("voiceTrain").textContent = on ? "🔊 Voice: On" : "🔇 Voice: Off";
+  }
+
+  /* ---------- 5. AVATAR (SVG) ---------- */
+  function avatarSVG(av) {
+    var skin = SKIN[av.skin], hair = HAIR[av.hair], robe = ROBE[av.robe], aura = AURA[av.aura];
+    return '' +
+    '<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Your mage">' +
+      '<defs><radialGradient id="av-aura"><stop offset="0" stop-color="' + aura + '" stop-opacity=".85"/><stop offset="1" stop-color="' + aura + '" stop-opacity="0"/></radialGradient></defs>' +
+      '<circle cx="100" cy="120" r="98" fill="url(#av-aura)"><animate attributeName="r" values="90;100;90" dur="4s" repeatCount="indefinite"/></circle>' +
+      // hair back
+      '<path d="M52 92 Q52 38 100 38 Q148 38 148 92 L148 168 Q124 150 100 156 Q76 150 52 168 Z" fill="' + hair + '"/>' +
+      // robe
+      '<path d="M48 238 L58 160 Q100 138 142 160 L152 238 Z" fill="' + robe + '"/>' +
+      '<path d="M92 150 L100 238 L108 150 Z" fill="#ffffff" opacity=".35"/>' +
+      '<path d="M58 160 Q100 178 142 160" fill="none" stroke="#ffe08a" stroke-width="5"/>' +
+      // neck + head
+      '<rect x="88" y="132" width="24" height="26" rx="8" fill="' + skin + '"/>' +
+      '<ellipse cx="100" cy="100" rx="38" ry="42" fill="' + skin + '"/>' +
+      // hair front
+      '<path d="M60 96 Q62 56 100 54 Q138 56 140 96 Q122 70 100 74 Q78 70 60 96 Z" fill="' + hair + '"/>' +
+      // eyes (calm closed)
+      '<path d="M78 104 Q86 110 94 104" fill="none" stroke="#2a1d33" stroke-width="4" stroke-linecap="round"/>' +
+      '<path d="M106 104 Q114 110 122 104" fill="none" stroke="#2a1d33" stroke-width="4" stroke-linecap="round"/>' +
+      '<path d="M90 124 Q100 132 110 124" fill="none" stroke="#a0525a" stroke-width="4" stroke-linecap="round"/>' +
+      // pointed hat star
+      '<path d="M100 20 L104 32 L116 33 L107 41 L110 53 L100 46 L90 53 L93 41 L84 33 L96 32 Z" fill="#ffe08a"><animate attributeName="opacity" values="1;.5;1" dur="3s" repeatCount="indefinite"/></path>' +
+    '</svg>';
+  }
+  function renderAvatars() {
+    $("homeAvatar").innerHTML = avatarSVG(state.avatar);
+    $("avatarPreview").innerHTML = avatarSVG(state.avatar);
+  }
+  function buildSwatches(containerId, palette, key) {
+    var box = $(containerId); box.innerHTML = "";
+    palette.forEach(function (color, i) {
+      var b = document.createElement("button");
+      b.className = "swatch" + (state.avatar[key] === i ? " sel" : "");
+      b.style.background = color;
+      b.setAttribute("aria-label", key + " option " + (i + 1));
+      b.addEventListener("click", function () {
+        state.avatar[key] = i; save(); buildAllSwatches(); renderAvatars();
+      });
+      box.appendChild(b);
+    });
+  }
+  function buildAllSwatches() {
+    buildSwatches("skinSw", SKIN, "skin");
+    buildSwatches("hairSw", HAIR, "hair");
+    buildSwatches("robeSw", ROBE, "robe");
+    buildSwatches("auraSw", AURA, "aura");
+  }
+
+  /* ---------- 6. BACKGROUND FX ---------- */
+  function buildFx() {
+    var fx = $("fx"), i, el;
+    for (i = 0; i < 40; i++) {
+      el = document.createElement("div"); el.className = "star";
+      el.style.left = Math.random() * 100 + "%"; el.style.top = Math.random() * 100 + "%";
+      el.style.animationDelay = (Math.random() * 4) + "s";
+      fx.appendChild(el);
+    }
+    for (i = 0; i < 4; i++) {
+      el = document.createElement("div"); el.className = "orb";
+      var s = 180 + Math.random() * 220;
+      el.style.width = el.style.height = s + "px";
+      el.style.left = (Math.random() * 90 - 10) + "%"; el.style.top = (Math.random() * 90 - 10) + "%";
+      el.style.animationDelay = (-Math.random() * 18) + "s";
+      fx.appendChild(el);
+    }
+    for (i = 0; i < 16; i++) {
+      el = document.createElement("div"); el.className = "mote";
+      el.style.left = Math.random() * 100 + "%";
+      el.style.animationDuration = (12 + Math.random() * 14) + "s";
+      el.style.animationDelay = (-Math.random() * 20) + "s";
+      fx.appendChild(el);
+    }
+  }
+  // Build the flowing wave paths used in the training visualization
+  function buildWaves() {
+    function path(amp, yBase, phase) {
+      var d = "M0 " + yBase;
+      for (var x = 0; x <= 800; x += 20) d += " L" + x + " " + (yBase + Math.sin((x / 400) * Math.PI * 2 + phase) * amp);
+      return d;
+    }
+    $("waveA").setAttribute("d", path(26, 75, 0));
+    $("waveB").setAttribute("d", path(18, 85, 1.5));
+  }
+
+  /* ---------- 7. NAVIGATION ---------- */
+  function show(name) {
+    var screens = document.querySelectorAll(".screen");
+    for (var i = 0; i < screens.length; i++) screens[i].classList.remove("active");
+    $("screen-" + name).classList.add("active");
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- 8. HOME UI ---------- */
+  function recommendation() {
+    // Gentle suggestion: the least-mastered exercise the mage is ready for
+    var level = levelFromXp(state.xp);
+    var unlocked = EXERCISES.filter(function (e, i) { return i < 2 + level; });
+    var best = unlocked[0], bestM = 101;
+    unlocked.forEach(function (e) {
+      var m = state.mastery[e.id] || 0;
+      if (m < bestM) { bestM = m; best = e; }
+    });
+    return best;
+  }
+  function renderExList() {
+    var box = $("exList"); box.innerHTML = "";
+    EXERCISES.forEach(function (e) {
+      var b = document.createElement("button");
+      b.className = "ex-item" + (state.selected === e.id ? " selected" : "");
+      var m = Math.round(state.mastery[e.id] || 0);
+      b.innerHTML = '<div class="nm">' + e.name + '</div><div class="ds">' + e.desc + '</div>' +
+        '<div class="mt">⏱ ' + fmtTime(e.seconds) + ' · ⭐ ' + e.xp + ' XP · Mastery ' + m + '%</div>';
+      b.addEventListener("click", function () { state.selected = e.id; save(); renderExList(); });
+      box.appendChild(b);
+    });
+  }
+  function renderHome() {
+    var level = levelFromXp(state.xp), rank = rankFor(level);
+    var into = state.xp % XP_PER_LEVEL;
+    $("homeName").textContent = state.avatar.name || "Mage";
+    $("homeLevel").textContent = level; $("homeRank").textContent = rank;
+    $("statLevel").textContent = level; $("statRank").textContent = rank;
+    $("statMinutes").textContent = mins(state.seconds);
+    $("statStreak").textContent = state.streak + (state.streak === 1 ? " day" : " days");
+    $("homeXpBar").style.width = into + "%";
+    $("homeXpText").textContent = into + " / " + XP_PER_LEVEL + " XP";
+    var r = recommendation();
+    $("recoName").textContent = r.name;
+    $("recoDesc").textContent = r.desc;
+    $("recoMeta").textContent = "⏱ " + fmtTime(r.seconds) + "  ·  ⭐ " + r.xp + " XP";
+    renderExList(); renderAvatars();
+  }
+
+  /* ---------- 9. TRAINING ENGINE ---------- */
+  var session = null;       // active session object
+  var rafId = null;
+
+  function slow(v) { return state.elder ? v * 1.5 : v; }   // elder mode: slower timing
+
+  function buildSchedule(ex) {
+    // Sequence of phases that repeats until the session ends:
+    // Breathe In (rest) -> Hold (user presses) -> Release (rest)
+    var phases = [], total = 0, t = 0;
+    var inSecs = slow(3), holdSecs = slow(ex.hold), relSecs = slow(ex.rest);
+    while (total < ex.seconds) {
+      phases.push({ type: "rest", text: "Breathe In", say: "Breathe In.", start: t, end: t + inSecs }); t += inSecs;
+      phases.push({ type: "hold", text: "HOLD", say: "Hold.", start: t, end: t + holdSecs }); t += holdSecs;
+      phases.push({ type: "rest", text: "Release", say: "Release.", start: t, end: t + relSecs }); t += relSecs;
+      total = t;
+    }
+    return phases;
+  }
+
+  function startSession() {
+    var ex = exById(state.selected);
+    session = {
+      ex: ex,
+      phases: buildSchedule(ex),
+      length: ex.seconds,
+      startTime: 0,
+      lastPhaseIdx: -1,
+      holding: false,
+      holdAccum: 0,       // seconds held inside hold windows
+      holdTotal: 0,       // total hold-window seconds elapsed
+      lastTick: 0,
+      done: false,
+      elapsed: 0
+    };
+    $("trainName").textContent = ex.name;
+    $("timer").textContent = fmtTime(ex.seconds);
+    $("instruction").textContent = "Get ready…";
+    $("progBar").style.width = "0%"; $("progText").textContent = "0%";
+    setHold(false); $("holdBtn").classList.remove("cue");
+    syncVoiceButtons();
+    show("train");
+    speak("Begin.");
+    // short calm intro before timing starts
+    setTimeout(function () {
+      if (!session || session.done) return;
+      session.startTime = performance.now(); session.lastTick = session.startTime;
+      rafId = requestAnimationFrame(tick);
+    }, 1800);
+  }
+
+  function currentPhase(t) {
+    var ph = session.phases;
+    for (var i = 0; i < ph.length; i++) if (t >= ph[i].start && t < ph[i].end) return { p: ph[i], i: i };
+    return { p: ph[ph.length - 1], i: ph.length - 1 };
+  }
+
+  function tick(now) {
+    if (!session || session.done) return;
+    var dt = (now - session.lastTick) / 1000; session.lastTick = now;
+    var t = (now - session.startTime) / 1000;
+    session.elapsed = t;
+    var cur = currentPhase(t);
+
+    // Announce phase changes
+    if (cur.i !== session.lastPhaseIdx) {
+      session.lastPhaseIdx = cur.i;
+      $("instruction").textContent = cur.p.type === "hold" ? "Press and HOLD" : cur.p.text;
+      $("holdBtn").classList.toggle("cue", cur.p.type === "hold");
+      $("holdBtn").textContent = cur.p.type === "hold" ? "HOLD" : "·";
+      speak(cur.p.say);
+      pulseOrb(cur.p.type);
+    }
+
+    // Accuracy: during hold windows count time held; (forgiving: elder gets grace)
+    if (cur.p.type === "hold") {
+      session.holdTotal += dt;
+      if (session.holding) session.holdAccum += dt;
+    }
+
+    // Progress + timer
+    var remaining = session.length - t;
+    $("timer").textContent = fmtTime(remaining);
+    var pct = clamp(t / session.length * 100, 0, 100);
+    $("progBar").style.width = pct + "%"; $("progText").textContent = Math.floor(pct) + "%";
+
+    // Animate orb position with breathing
+    animateOrb(t, cur.p);
+
+    if (t >= session.length) { finishSession(); return; }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  // Flow visualization helpers
+  function animateOrb(t, phase) {
+    var orb = $("flowOrb"), halo = $("flowHalo");
+    var base = phase.type === "hold" ? 34 : 22;
+    var wob = Math.sin(t * 2) * 4;
+    var held = session.holding ? 10 : 0;
+    var r = base + wob + held;
+    orb.setAttribute("r", r);
+    halo.setAttribute("r", r + 18 + Math.sin(t * 3) * 4);
+    orb.setAttribute("cy", 75 + Math.sin(t * 1.3) * 8);
+    halo.setAttribute("cy", 75 + Math.sin(t * 1.3) * 8);
+    var auraColor = AURA[state.avatar.aura];
+    orb.setAttribute("fill", session.holding ? "#ffe08a" : auraColor);
+    halo.setAttribute("stroke", auraColor);
+  }
+  function pulseOrb() { /* visual handled by animateOrb each frame */ }
+
+  function setHold(down) {
+    if (!session) return;
+    session.holding = down;
+    $("holdBtn").classList.toggle("down", down);
+  }
+
+  function finishSession() {
+    if (!session || session.done) return;
+    session.done = true;
+    cancelAnimationFrame(rafId);
+    setHold(false);
+    var ex = session.ex;
+
+    // Accuracy: fraction of hold windows held. Elder mode is more forgiving
+    // (a floor and a bonus). Never below a friendly minimum.
+    var raw = session.holdTotal > 0 ? session.holdAccum / session.holdTotal : 0.8;
+    var acc = state.elder ? Math.min(1, raw * 1.15 + 0.2) : Math.min(1, raw + 0.05);
+    acc = clamp(acc, 0.6, 1);                      // never a failure
+    var accPct = Math.round(acc * 100);
+
+    // Participation-weighted: partial finish still earns proportional XP
+    var completion = clamp(session.elapsed / session.length, 0.25, 1);
+    var xp = Math.round(ex.xp * (0.6 + 0.4 * acc) * completion);
+    xp = Math.max(5, xp);
+
+    var oldLevel = levelFromXp(state.xp);
+    state.xp += xp;
+    var newLevel = levelFromXp(state.xp);
+    var secs = Math.round(Math.min(session.elapsed, session.length));
+    state.seconds += secs;
+
+    // Mastery grows with participation and accuracy
+    var m = state.mastery[ex.id] || 0;
+    state.mastery[ex.id] = clamp(m + Math.round(4 + acc * 6), 0, 100);
+
+    // Streak
+    var today = todayStr();
+    if (state.lastDay !== today) {
+      var y = new Date(); y.setDate(y.getDate() - 1);
+      state.streak = (state.lastDay === todayStr(y)) ? state.streak + 1 : 1;
+      state.lastDay = today;
+    }
+    save();
+    speak("Excellent. Session Complete.");
+    showResults(ex, accPct, secs, xp, oldLevel, newLevel);
+  }
+
+  /* ---------- 10. RESULTS ---------- */
+  function showResults(ex, accPct, secs, xp, oldLevel, newLevel) {
+    $("resExercise").textContent = ex.name;
+    $("resAccuracy").textContent = accPct + "%";
+    $("resMinutes").textContent = (secs < 60 ? secs + " sec" : mins(secs) + " min");
+    $("resXp").textContent = "+" + xp;
+    $("resMsg").textContent = pick(MESSAGES);
+    var m = state.mastery[ex.id] || 0;
+    $("resMastery").style.width = "0%";
+    setTimeout(function () { $("resMastery").style.width = m + "%"; }, 100);
+    $("resMasteryText").textContent = ex.name + " mastery: " + m + "%";
+    var lu = $("resLevelUp");
+    if (newLevel > oldLevel) {
+      lu.style.display = "block";
+      lu.textContent = "✨ You reached Level " + newLevel + " — " + rankFor(newLevel) + "!";
+    } else lu.style.display = "none";
+    show("results");
+  }
+
+  function endEarly() {
+    if (!session || session.done) { show("home"); renderHome(); return; }
+    // Finishing gently still rewards participation (never a failure)
+    if (session.startTime === 0) { session.done = true; session = null; show("home"); renderHome(); return; }
+    session.elapsed = Math.max(session.elapsed, 1);
+    finishSession();
+  }
+
+  /* ---------- 11. SETTINGS ---------- */
+  function setElder(on) {
+    state.elder = !!on;
+    document.body.classList.toggle("elder", state.elder);
+    $("tgElder").textContent = state.elder ? "On" : "Off";
+    $("tgElder").classList.toggle("on", state.elder);
+    save();
+  }
+  var resetArmed = false, resetTimer = null;
+  function resetProgress() {
+    if (!resetArmed) {
+      resetArmed = true; $("resetHint").style.display = "block";
+      $("resetBtn").textContent = "⚠️ Tap Again to Confirm Reset";
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(disarmReset, 6000);
+      return;
+    }
+    disarmReset();
+    state = defaultState();
+    save(); applyState(); toast("Progress has been reset.");
+  }
+  function disarmReset() {
+    resetArmed = false; $("resetHint").style.display = "none";
+    $("resetBtn").textContent = "🗑 Reset Progress";
+  }
+
+  /* ---------- 12. SAVE / IMPORT ---------- */
+  function save() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* storage may be unavailable */ }
+  }
+  function sanitize(obj) {
+    // Merge imported/loaded data over defaults with validation
+    var d = defaultState();
+    if (!obj || typeof obj !== "object") return d;
+    d.xp = Math.max(0, parseInt(obj.xp, 10) || 0);
+    d.streak = Math.max(0, parseInt(obj.streak, 10) || 0);
+    d.lastDay = typeof obj.lastDay === "string" ? obj.lastDay.slice(0, 10) : "";
+    d.seconds = Math.max(0, parseInt(obj.seconds, 10) || 0);
+    if (obj.mastery && typeof obj.mastery === "object") {
+      EXERCISES.forEach(function (e) {
+        var v = parseFloat(obj.mastery[e.id]);
+        if (!isNaN(v)) d.mastery[e.id] = clamp(v, 0, 100);
+      });
+    }
+    if (obj.avatar && typeof obj.avatar === "object") {
+      d.avatar.name = String(obj.avatar.name || "Mage").slice(0, 16);
+      d.avatar.skin = clamp(parseInt(obj.avatar.skin, 10) || 0, 0, SKIN.length - 1);
+      d.avatar.hair = clamp(parseInt(obj.avatar.hair, 10) || 0, 0, HAIR.length - 1);
+      d.avatar.robe = clamp(parseInt(obj.avatar.robe, 10) || 0, 0, ROBE.length - 1);
+      d.avatar.aura = clamp(parseInt(obj.avatar.aura, 10) || 0, 0, AURA.length - 1);
+    }
+    d.elder = obj.elder !== false;
+    d.voice = obj.voice !== false;
+    d.selected = exById(obj.selected).id;
+    return d;
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(SAVE_KEY);
+      if (raw) state = sanitize(JSON.parse(raw));
+    } catch (e) { state = defaultState(); }
+  }
+  function exportSave() {
+    var code = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    var box = $("importBox");
+    box.value = code;
+    box.focus(); box.select();
+    var copied = false;
+    try { copied = document.execCommand("copy"); } catch (e) {}
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(function () { toast("Save code copied. Keep it somewhere safe."); }, function () {});
+    }
+    toast(copied ? "Save code copied. Keep it somewhere safe." : "Save code is in the box. Copy it to keep it safe.");
+  }
+  function importSave() {
+    var txt = $("importBox").value.trim();
+    if (!txt) { toast("Paste a save code into the box first."); return; }
+    try {
+      var json = decodeURIComponent(escape(atob(txt)));
+      state = sanitize(JSON.parse(json));
+      save(); applyState(); $("importBox").value = "";
+      toast("Save imported. Welcome back!");
+    } catch (e) {
+      toast("That save code could not be read. Please try again.");
+    }
+  }
+
+  /* ---------- 13. INIT ---------- */
+  function applyState() {
+    document.body.classList.toggle("elder", state.elder);
+    $("tgElder").textContent = state.elder ? "On" : "Off";
+    $("tgElder").classList.toggle("on", state.elder);
+    $("nameInput").value = state.avatar.name;
+    syncVoiceButtons(); buildAllSwatches(); renderHome();
+  }
+
+  function bind() {
+    $("beginBtn").addEventListener("click", startSession);
+    $("homeBtn").addEventListener("click", function () { renderHome(); show("home"); });
+    $("endEarly").addEventListener("click", endEarly);
+    $("openAvatar").addEventListener("click", function () { renderAvatars(); show("avatar"); });
+    $("openSettings").addEventListener("click", function () { show("settings"); });
+    $("avatarDone").addEventListener("click", function () { renderHome(); show("home"); });
+    $("settingsDone").addEventListener("click", function () { disarmReset(); renderHome(); show("home"); });
+    $("nameInput").addEventListener("input", function () {
+      state.avatar.name = this.value.slice(0, 16) || "Mage"; save(); renderAvatars();
+    });
+    $("tgElder").addEventListener("click", function () { setElder(!state.elder); });
+    $("tgVoice").addEventListener("click", function () { state.voice = !state.voice; if (!state.voice && voiceOk) window.speechSynthesis.cancel(); syncVoiceButtons(); save(); });
+    $("voiceTrain").addEventListener("click", function () { state.voice = !state.voice; if (!state.voice && voiceOk) window.speechSynthesis.cancel(); syncVoiceButtons(); save(); });
+    $("exportBtn").addEventListener("click", exportSave);
+    $("importBtn").addEventListener("click", importSave);
+    $("resetBtn").addEventListener("click", resetProgress);
+
+    // Press-and-hold button: pointer events cover mouse + touch + pen
+    var hb = $("holdBtn");
+    hb.addEventListener("pointerdown", function (e) { e.preventDefault(); try { hb.setPointerCapture(e.pointerId); } catch (x) {} setHold(true); });
+    hb.addEventListener("pointerup", function () { setHold(false); });
+    hb.addEventListener("pointercancel", function () { setHold(false); });
+    hb.addEventListener("pointerleave", function () { /* captured pointer keeps hold; ignore */ });
+    hb.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    // Keyboard support: Space / Enter
+    hb.addEventListener("keydown", function (e) { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); setHold(true); } });
+    hb.addEventListener("keyup", function (e) { if (e.key === " " || e.key === "Enter") { e.preventDefault(); setHold(false); } });
+
+    // Pause timing gracefully if the tab is hidden
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden && session && !session.done && voiceOk) window.speechSynthesis.cancel();
+    });
+  }
+
+  load();
+  buildFx();
+  buildWaves();
+  bind();
+  applyState();
+})();
+</script>
+</body>
+</html>
